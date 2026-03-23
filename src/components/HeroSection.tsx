@@ -38,7 +38,7 @@ export const HeroSection = () => {
             className="text-lg px-8"
           >
             <Shield className="w-5 h-5" />
-            Try AI Detector
+            Try Phishing Detector
           </Button>
           <Button 
             variant="outline" 
