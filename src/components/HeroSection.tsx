@@ -27,7 +27,7 @@ export const HeroSection = () => {
         </h1>
         
         <p className="text-xl md:text-2xl text-muted-foreground mb-12 max-w-3xl mx-auto animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          Learn to identify phishing attempts, understand preventive measures, and use AI-powered detection to protect yourself and your organization
+          Learn to identify phishing attempts, understand preventive measures, and use our detection tool to protect yourself and your organization
         </p>
         
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in" style={{ animationDelay: '0.3s' }}>
