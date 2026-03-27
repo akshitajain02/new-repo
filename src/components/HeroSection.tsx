@@ -37,10 +37,12 @@ export const HeroSection = () => {
           <Button 
             variant="hero" 
             size="lg"
-            onClick={() => scrollToSection('detector')}
+            onClick={() => navigate('/detector')}
             className="text-lg px-8"
           >
             <Shield className="w-5 h-5" />
+            Try Phishing Detector
+          </Button>
             Try Phishing Detector
           </Button>
           <Button 
