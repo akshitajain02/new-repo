@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Shield, AlertTriangle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export const HeroSection = () => {
+  const navigate = useNavigate();
+
   const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   };
