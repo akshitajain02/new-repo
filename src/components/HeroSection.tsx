@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Shield, AlertTriangle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export const HeroSection = () => {
+  const navigate = useNavigate();
+
   const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   };
@@ -34,7 +37,7 @@ export const HeroSection = () => {
           <Button 
             variant="hero" 
             size="lg"
-            onClick={() => scrollToSection('detector')}
+            onClick={() => navigate('/detector')}
             className="text-lg px-8"
           >
             <Shield className="w-5 h-5" />
