@@ -1,92 +1,87 @@
-import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react"
+import { supabase } from "@/integrations/supabase/client"
 
 export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
 
-  const handleLogin = async (e: any) => {
-    e.preventDefault();
-    setLoading(true);
-
+  // 🔐 LOGIN
+  const handleLogin = async () => {
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
-    });
-
-    setLoading(false);
+    })
 
     if (error) {
-      alert(error.message);
+      alert(error.message)
     } else {
-      alert("Login successful ✅");
-      window.location.href = "/";
+      window.location.href = "/detector"
     }
-  };
+  }
+
+  // 🆕 SIGNUP + AUTO LOGIN
+  const handleSignup = async () => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+    })
+
+    if (error) {
+      if (error.message.includes("already registered")) {
+        alert("User already exists. Please login.")
+      } else {
+        alert(error.message)
+      }
+      return
+    }
+
+    // 🔥 AUTO LOGIN TRY
+    const { error: loginError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (loginError) {
+      alert("Signup successful! Please login manually.")
+      return
+    }
+
+    window.location.href = "/detector"
+  }
 
   return (
-    <div style={styles.container}>
-      <form onSubmit={handleLogin} style={styles.card}>
-        <h2>Login</h2>
+    <div style={{ padding: "20px", maxWidth: "400px", margin: "auto" }}>
+      <h2>Login / Signup</h2>
 
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={styles.input}
-          required
-        />
+      <input
+        type="email"
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        style={{ width: "100%", padding: "10px", marginBottom: "10px" }}
+      />
 
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={styles.input}
-          required
-        />
+      <input
+        type="password"
+        placeholder="Password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        style={{ width: "100%", padding: "10px", marginBottom: "10px" }}
+      />
 
-        <button type="submit" style={styles.button} disabled={loading}>
-          {loading ? "Loading..." : "Login"}
-        </button>
-      </form>
+      <button
+        onClick={handleLogin}
+        style={{ width: "100%", padding: "10px", marginBottom: "10px" }}
+      >
+        Login
+      </button>
+
+      <button
+        onClick={handleSignup}
+        style={{ width: "100%", padding: "10px" }}
+      >
+        Sign Up
+      </button>
     </div>
-  );
+  )
 }
-
-const styles: any = {
-  container: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    height: "100vh",
-    background: "#0f172a",
-  },
-  card: {
-    padding: "30px",
-    borderRadius: "10px",
-    background: "#1e293b",
-    color: "white",
-    width: "300px",
-    textAlign: "center",
-  },
-  input: {
-    display: "block",
-    width: "100%",
-    margin: "10px 0",
-    padding: "10px",
-    borderRadius: "5px",
-    border: "none",
-  },
-  button: {
-    width: "100%",
-    padding: "10px",
-    background: "#3b82f6",
-    color: "white",
-    border: "none",
-    borderRadius: "5px",
-    cursor: "pointer",
-  },
-};

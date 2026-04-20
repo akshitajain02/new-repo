@@ -12,7 +12,7 @@ const Index = () => {
       <footer className="py-8 px-4 border-t border-border bg-card">
         <div className="container max-w-7xl mx-auto text-center">
           <p className="text-sm text-muted-foreground">
-            © 2025 Phishing Defense Platform. Educational purposes only. Stay vigilant, stay safe.
+            © 2026 Phishing Defense Platform. Educational purposes only. Stay vigilant, stay safe.
           </p>
         </div>
       </footer>

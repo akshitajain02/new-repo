@@ -3,3 +3,6 @@ import App from "./App.tsx";
 import "./index.css";
 
 createRoot(document.getElementById("root")!).render(<App />);
+<button onClick={() => window.location.href = "/login"}>
+  Login
+</button>

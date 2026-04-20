@@ -43,116 +43,141 @@ const Detector = () => {
   const [result, setResult] = useState<ScanResult | null>(null);
   const [recentScans, setRecentScans] = useState<RecentScan[]>([]);
   const [loadingRecents, setLoadingRecents] = useState(true);
+  const [user, setUser] = useState(null)
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchRecentScans();
-  }, []);
+  fetchRecentScans();
+
+  supabase.auth.getUser().then(({ data }) => {
+    setUser(data.user)
+  })
+}, []);
 
   const fetchRecentScans = async () => {
-    setLoadingRecents(true);
-    const { data, error } = await supabase
-      .from("phishing_scans")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(10);
+  setLoadingRecents(true)
 
-    if (!error && data) {
-      setRecentScans(data as RecentScan[]);
-    }
-    setLoadingRecents(false);
-  };
+  const {
+    data: { user }
+  } = await supabase.auth.getUser()
+
+  // agar login nahi hai
+  if (!user) {
+    setRecentScans([])
+    setLoadingRecents(false)
+    return
+  }
+
+  const { data, error } = await supabase
+    .from("phishing_scans")
+    .select("*")
+    .eq("user_id", user.id) // 🔥 IMPORTANT LINE
+    .order("created_at", { ascending: false })
+    .limit(10)
+
+  if (!error && data) {
+    setRecentScans(data)
+  }
+
+  setLoadingRecents(false)
+}
 
   const analyzeEmail = async () => {
-    if (!emailText.trim()) {
-      toast({
-        title: "Email content required",
-        description: "Paste the suspicious email text to analyze",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setAnalyzing(true);
-    setResult(null);
-
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    const text = emailText.toLowerCase();
-    const foundIndicators: string[] = [];
-    let suspicionScore = 0;
-
-    PHISHING_KEYWORDS.forEach((keyword) => {
-      if (text.includes(keyword)) {
-        suspicionScore += 10;
-        foundIndicators.push(`Keyword detected: "${keyword}"`);
-      }
+  if (!emailText.trim()) {
+    toast({
+      title: "Email content required",
+      description: "Paste the suspicious email text to analyze",
+      variant: "destructive",
     });
+    return;
+  }
 
-    if (text.includes("http://") || text.match(/[a-z0-9-]+\.[a-z]{2,}/g)) {
-      suspicionScore += 15;
-      foundIndicators.push("Suspicious URL patterns found");
-    }
+  setAnalyzing(true);
+  setResult(null);
 
-    if (text.match(/\$\d+/)) {
+  await new Promise((resolve) => setTimeout(resolve, 1500));
+
+  const text = emailText.toLowerCase();
+  const foundIndicators: string[] = [];
+  let suspicionScore = 0;
+
+  PHISHING_KEYWORDS.forEach((keyword) => {
+    if (text.includes(keyword)) {
       suspicionScore += 10;
-      foundIndicators.push("Monetary value references detected");
+      foundIndicators.push(`Keyword detected: "${keyword}"`);
     }
+  });
 
-    if (text.match(/[A-Z]{3,}/g)) {
-      suspicionScore += 5;
-      foundIndicators.push("Excessive capitalization (urgency tactic)");
-    }
+  if (text.includes("http://") || text.match(/[a-z0-9-]+\.[a-z]{2,}/g)) {
+    suspicionScore += 15;
+    foundIndicators.push("Suspicious URL patterns found");
+  }
 
-    if (text.match(/!{2,}/)) {
-      suspicionScore += 5;
-      foundIndicators.push("Multiple exclamation marks (pressure tactic)");
-    }
+  if (text.match(/\$\d+/)) {
+    suspicionScore += 10;
+    foundIndicators.push("Monetary value references detected");
+  }
 
-    if (text.match(/@[a-z0-9.-]+\.[a-z]{2,}/g)) {
-      const emails = text.match(/@[a-z0-9.-]+\.[a-z]{2,}/g) || [];
-      const suspicious = emails.filter(e =>
-        e.includes("secure") || e.includes("support") || e.includes("admin") || e.includes("noreply")
-      );
-      if (suspicious.length > 0) {
-        suspicionScore += 10;
-        foundIndicators.push("Suspicious sender domain patterns");
-      }
-    }
+  if (text.match(/[A-Z]{3,}/g)) {
+    suspicionScore += 5;
+    foundIndicators.push("Excessive capitalization");
+  }
 
-    const isPhishing = suspicionScore > 25;
-    const confidence = Math.min(98, 45 + suspicionScore);
+  if (text.match(/!{2,}/)) {
+    suspicionScore += 5;
+    foundIndicators.push("Multiple exclamation marks");
+  }
 
-    const scanResult: ScanResult = {
-      isPhishing,
-      confidence,
-      indicators: foundIndicators.length > 0 ? foundIndicators : ["No major red flags detected"],
-      recommendation: isPhishing
-        ? "⚠️ HIGH RISK: This email exhibits multiple phishing characteristics. Do NOT click any links, do NOT provide personal information. Delete immediately and report to your IT security team."
-        : "✅ LOW RISK: This email appears relatively safe. However, always verify sender identity and exercise caution with links and attachments.",
-    };
+  const isPhishing = suspicionScore > 25;
+  const confidence = Math.min(98, 45 + suspicionScore);
 
-    setResult(scanResult);
+  const scanResult = {
+    isPhishing,
+    confidence,
+    indicators: foundIndicators.length > 0 ? foundIndicators : ["No major red flags detected"],
+    recommendation: isPhishing
+      ? "⚠️ HIGH RISK: Do NOT click anything."
+      : "✅ Looks safe, but stay cautious.",
+  };
 
-    // Store in database
-    await supabase.from("phishing_scans").insert({
-      email_content: emailText.substring(0, 2000),
+  setResult(scanResult);
+
+  // 🔥 USER FETCH (IMPORTANT)
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+
+  console.log("USER:", user);
+
+  // 🔥 SAVE DATA
+  if (user) {
+    const { error } = await supabase.from("phishing_scans").insert({
+      email_content: emailText,
       is_phishing: isPhishing,
       confidence,
       indicators: foundIndicators,
       recommendation: scanResult.recommendation,
+      user_id: user.id,
     });
 
-    // Refresh recents
-    fetchRecentScans();
+    if (error) {
+      console.log("INSERT ERROR:", error.message);
+    } else {
+      console.log("Saved successfully ✅");
+    }
+  } else {
+    console.log("User not logged in ❌");
+  }
 
-    toast({
-      title: "Scan Complete",
-      description: `Threat level: ${isPhishing ? "HIGH" : "LOW"} (${confidence}% confidence)`,
-    });
+  fetchRecentScans();
 
-    setAnalyzing(false);
-  };
+  toast({
+    title: "Scan Complete",
+    description: `Threat level: ${isPhishing ? "HIGH" : "LOW"} (${confidence}%)`,
+  });
+
+  setAnalyzing(false);
+};
 
   return (
     <div className="min-h-screen bg-background">
@@ -170,6 +195,26 @@ const Detector = () => {
               <Shield className="w-6 h-6 text-primary" />
               <h1 className="text-xl font-bold">Phishing Detector</h1>
             </div>
+            {user ? (
+  <Button
+    onClick={async () => {
+      await supabase.auth.signOut()
+      location.reload()
+    }}
+    variant="outline"
+    size="sm"
+  >
+    Logout
+  </Button>
+) : (
+  <Button
+    onClick={() => window.location.href = "/login"}
+    variant="outline"
+    size="sm"
+  >
+    Login
+  </Button>
+)}
           </div>
           <Badge variant="outline" className="gap-1">
             <Database className="w-3 h-3" />
