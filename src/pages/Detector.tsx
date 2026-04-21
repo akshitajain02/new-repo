@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 const PHISHING_KEYWORDS = [
-  "urgent", "verify", "suspend", "click here", "account", "password",
+  "urgent", "verify", "suspend", "click here","lottery","account", "password",
   "confirm", "security alert", "unusual activity", "limited time",
   "act now", "expire", "unauthorized", "validate", "update your information",
   "dear customer", "dear user", "congratulations", "you have won",
@@ -41,7 +41,7 @@ const Detector = () => {
   const [showLogin, setShowLogin] = useState(false)
 const [email, setEmail] = useState("")
 const [password, setPassword] = useState("")
-
+const [mode, setMode] = useState("keyword")
   const [emailText, setEmailText] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState<ScanResult | null>(null);
@@ -85,22 +85,7 @@ const [password, setPassword] = useState("")
 
   setLoadingRecents(false)
 }
-
-  const analyzeEmail = async () => {
-  if (!emailText.trim()) {
-    toast({
-      title: "Email content required",
-      description: "Paste the suspicious email text to analyze",
-      variant: "destructive",
-    });
-    return;
-  }
-
-  setAnalyzing(true);
-  setResult(null);
-
-  await new Promise((resolve) => setTimeout(resolve, 1500));
-
+const runKeywordAnalysis = async () => {
   const text = emailText.toLowerCase();
   const foundIndicators: string[] = [];
   let suspicionScore = 0;
@@ -119,17 +104,7 @@ const [password, setPassword] = useState("")
 
   if (text.match(/\$\d+/)) {
     suspicionScore += 10;
-    foundIndicators.push("Monetary value references detected");
-  }
-
-  if (text.match(/[A-Z]{3,}/g)) {
-    suspicionScore += 5;
-    foundIndicators.push("Excessive capitalization");
-  }
-
-  if (text.match(/!{2,}/)) {
-    suspicionScore += 5;
-    foundIndicators.push("Multiple exclamation marks");
+    foundIndicators.push("Money reference detected");
   }
 
   const isPhishing = suspicionScore > 25;
@@ -138,52 +113,56 @@ const [password, setPassword] = useState("")
   const scanResult = {
     isPhishing,
     confidence,
-    indicators: foundIndicators.length > 0 ? foundIndicators : ["No major red flags detected"],
+    indicators: foundIndicators.length > 0 ? foundIndicators : ["No major red flags"],
     recommendation: isPhishing
-      ? "⚠️ HIGH RISK: Do NOT click anything."
-      : "✅ Looks safe, but stay cautious.",
+      ? "⚠️ Phishing detected"
+      : "✅ Looks safe",
   };
 
   setResult(scanResult);
-
-  // 🔥 USER FETCH (IMPORTANT)
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-
-  console.log("USER:", user);
-
-  // 🔥 SAVE DATA
-  if (user) {
-    const { error } = await supabase.from("phishing_scans").insert({
-      email_content: emailText,
-      is_phishing: isPhishing,
-      confidence,
-      indicators: foundIndicators,
-      recommendation: scanResult.recommendation,
-      user_id: user.id,
-    });
-
-    if (error) {
-      console.log("INSERT ERROR:", error.message);
-    } else {
-      console.log("Saved successfully ✅");
-    }
-  } else {
-    console.log("User not logged in ❌");
-  }
-
-  fetchRecentScans();
-
-  toast({
-    title: "Scan Complete",
-    description: `Threat level: ${isPhishing ? "HIGH" : "LOW"} (${confidence}%)`,
+}
+const runAIAnalysis = async () => {
+  setResult({
+    isPhishing: false,
+    confidence: 70,
+    indicators: ["AI analysis placeholder"],
+    recommendation: "AI integration pending",
   });
-
-  setAnalyzing(false);
 };
 
+const runMLAnalysis = async () => {
+  setResult({
+    isPhishing: true,
+    confidence: 80,
+    indicators: ["ML model placeholder"],
+    recommendation: "ML model integration pending",
+  });
+};
+ const analyzeEmail = async () => {
+  if (!emailText.trim()) {
+    toast({
+      title: "Email required",
+      variant: "destructive",
+    });
+    return;
+  }
+
+  setAnalyzing(true);
+  setResult(null);
+
+  if (mode === "keyword") {
+  await runKeywordAnalysis();
+} else if (mode === "ai") {
+  await runAIAnalysis();
+} else if (mode === "ml") {
+  await runMLAnalysis();
+}
+
+  setAnalyzing(false);
+}
+
   return (
+    
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border bg-card/80 backdrop-blur sticky top-0 z-50">
@@ -228,6 +207,19 @@ const [password, setPassword] = useState("")
       </header>
 
       <div className="container max-w-7xl mx-auto px-4 py-8">
+        <div className="flex gap-2 mb-4">
+  <Button onClick={() => setMode("keyword")} variant={mode==="keyword"?"default":"outline"}>
+    Keyword
+  </Button>
+
+  <Button onClick={() => setMode("ai")} variant={mode==="ai"?"default":"outline"}>
+    AI
+  </Button>
+
+  <Button onClick={() => setMode("ml")} variant={mode==="ml"?"default":"outline"}>
+    ML
+  </Button>
+</div>
         {/* Stats Bar */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Card className="border border-border">
