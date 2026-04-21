@@ -38,6 +38,10 @@ type RecentScan = {
 };
 
 const Detector = () => {
+  const [showLogin, setShowLogin] = useState(false)
+const [email, setEmail] = useState("")
+const [password, setPassword] = useState("")
+
   const [emailText, setEmailText] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState<ScanResult | null>(null);
@@ -208,7 +212,7 @@ const Detector = () => {
   </Button>
 ) : (
   <Button
-    onClick={() => window.location.href = "/login"}
+    onClick={() => setShowLogin(true)}
     variant="outline"
     size="sm"
   >
@@ -518,8 +522,81 @@ const Detector = () => {
           </div>
         </div>
       </div>
+      {showLogin && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="bg-white rounded-xl p-6 w-[320px] shadow-xl space-y-4">
+      
+      <h2 className="text-lg font-semibold text-center">
+        Login / Sign Up
+      </h2>
+
+      <input
+        type="email"
+        placeholder="Email"
+        className="w-full border p-2 rounded"
+        onChange={(e) => setEmail(e.target.value)}
+      />
+
+      <input
+        type="password"
+        placeholder="Password"
+        className="w-full border p-2 rounded"
+        onChange={(e) => setPassword(e.target.value)}
+      />
+
+      <div className="flex gap-2">
+        <button
+          className="bg-blue-500 text-white px-3 py-2 rounded w-full"
+          onClick={async () => {
+            const { error } = await supabase.auth.signInWithPassword({
+              email,
+              password,
+            })
+
+            if (error) {
+              alert("Login failed")
+            } else {
+              alert("Login success")
+              setShowLogin(false)
+              location.reload()
+            }
+          }}
+        >
+          Login
+        </button>
+
+        <button
+          className="bg-green-500 text-white px-3 py-2 rounded w-full"
+          onClick={async () => {
+            const { error } = await supabase.auth.signUp({
+              email,
+              password,
+            })
+
+            if (error) {
+              alert(error.message)
+            } else {
+              alert("Signup success, now login")
+            }
+          }}
+        >
+          Sign Up
+        </button>
+      </div>
+
+      <button
+        className="text-sm text-gray-500 w-full mt-2"
+        onClick={() => setShowLogin(false)}
+      >
+        Cancel
+      </button>
     </div>
-  );
+  </div>
+)}
+    </div>
+  
+
+);
 };
 
 export default Detector;
