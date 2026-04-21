@@ -122,20 +122,21 @@ const runKeywordAnalysis = async () => {
   setResult(scanResult);
 }
 const runAIAnalysis = async () => {
-  const text = emailText.toLowerCase();
+  try {
+    const res = await fetch("http://localhost:5000/analyze", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email: emailText }),
+    });
 
-  const isPhishing = text.includes("verify") || text.includes("urgent");
+    const data = await res.json();
 
-  setResult({
-    isPhishing,
-    confidence: isPhishing ? 85 : 60,
-    indicators: isPhishing
-      ? ["AI detected urgency pattern"]
-      : ["AI thinks it's normal"],
-    recommendation: isPhishing
-      ? "⚠️ AI says: suspicious email"
-      : "✅ AI says: safe email",
-  });
+    setResult(data);
+  } catch (err) {
+    console.log(err);
+  }
 };
 
 const runMLAnalysis = async () => {
