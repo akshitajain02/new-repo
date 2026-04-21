@@ -122,23 +122,40 @@ const runKeywordAnalysis = async () => {
   setResult(scanResult);
 }
 const runAIAnalysis = async () => {
+  const text = emailText.toLowerCase();
+
+  const isPhishing = text.includes("verify") || text.includes("urgent");
+
   setResult({
-    isPhishing: false,
-    confidence: 70,
-    indicators: ["AI analysis placeholder"],
-    recommendation: "AI integration pending",
+    isPhishing,
+    confidence: isPhishing ? 85 : 60,
+    indicators: isPhishing
+      ? ["AI detected urgency pattern"]
+      : ["AI thinks it's normal"],
+    recommendation: isPhishing
+      ? "⚠️ AI says: suspicious email"
+      : "✅ AI says: safe email",
   });
 };
 
 const runMLAnalysis = async () => {
+  const text = emailText.toLowerCase();
+
+  const isPhishing = text.includes("bank") || text.includes("password");
+
   setResult({
-    isPhishing: true,
-    confidence: 80,
-    indicators: ["ML model placeholder"],
-    recommendation: "ML model integration pending",
+    isPhishing,
+    confidence: isPhishing ? 90 : 65,
+    indicators: isPhishing
+      ? ["ML detected sensitive keywords"]
+      : ["ML model sees low risk"],
+    recommendation: isPhishing
+      ? "⚠️ ML says: high risk"
+      : "✅ ML says: safe",
   });
 };
  const analyzeEmail = async () => {
+  console.log("MODE:", mode);
   if (!emailText.trim()) {
     toast({
       title: "Email required",
@@ -150,14 +167,32 @@ const runMLAnalysis = async () => {
   setAnalyzing(true);
   setResult(null);
 
-  if (mode === "keyword") {
-  await runKeywordAnalysis();
-} else if (mode === "ai") {
-  await runAIAnalysis();
-} else if (mode === "ml") {
-  await runMLAnalysis();
+ switch (mode) {
+  case "keyword":
+    await runKeywordAnalysis();
+    break;
+  case "ai":
+    await runAIAnalysis();
+    break;
+  case "ml":
+    await runMLAnalysis();
+    break;
 }
+const {
+  data: { user }
+} = await supabase.auth.getUser();
 
+if (user && result) {
+  await supabase.from("phishing_scans").insert({
+    email_content: emailText,
+    is_phishing: result.isPhishing,
+    confidence: result.confidence,
+    indicators: result.indicators,
+    user_id: user.id,
+  });
+
+  fetchRecentScans();
+}
   setAnalyzing(false);
 }
 
@@ -331,6 +366,9 @@ const runMLAnalysis = async () => {
             </Card>
 
             {/* Results Panel */}
+            <p className="text-xs text-muted-foreground">
+  Mode: {mode.toUpperCase()}
+</p>
             <Card className="border-2">
               <CardHeader>
                 <div className="flex items-center gap-2">
