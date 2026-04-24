@@ -186,7 +186,7 @@ export const AIDetector = () => {
                   <div>
                     <h4 className="font-semibold mb-3">Detected Indicators:</h4>
                     <ul className="space-y-2">
-                      {result.indicators.map((indicator, i) => (
+                      {(result.indicators || []).map((indicator, i) => (
                         <li key={i} className="flex items-start gap-2 text-sm">
                           <span className={result.isPhishing ? "text-destructive" : "text-success"}>
                             {result.isPhishing ? "⚠" : "✓"}

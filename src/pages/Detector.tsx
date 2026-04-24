@@ -123,19 +123,37 @@ const runKeywordAnalysis = async () => {
 }
 const runAIAnalysis = async () => {
   try {
-    const res = await fetch("http://localhost:5000/analyze", {
+    const res = await fetch("/api/analyze", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ email: emailText }),
+      body: JSON.stringify({ emailText }),
     });
 
     const data = await res.json();
+    console.log("AI RESPONSE:", data);
 
-    setResult(data);
+    if (!res.ok) {
+      throw new Error(data.details || data.error || "AI failed");
+    }
+
+    setResult({
+      isPhishing: Boolean(data.isPhishing),
+      confidence: Number(data.confidence ?? 50),
+      indicators: Array.isArray(data.indicators)
+        ? data.indicators
+        : ["AI analysis completed"],
+      recommendation: data.recommendation || "Stay alert while opening suspicious emails.",
+    });
   } catch (err) {
-    console.log(err);
+    console.log("ERROR:", err);
+    setResult({
+      isPhishing: true,
+      confidence: 50,
+      indicators: ["AI request failed"],
+      recommendation: "Could not complete AI analysis.",
+    });
   }
 };
 
