@@ -37,10 +37,12 @@ export default async function handler(req, res) {
 
     return res.status(200).json(result);
   } catch (error) {
-    console.error("AI ERROR:", error);
-    return res.status(500).json({
-      error: "AI request failed",
-      details: error.message,
-    });
-  }
+  console.error("AI ERROR FULL:", error);
+
+  return res.status(500).json({
+    error: "AI request failed",
+    details: error?.message || String(error),
+    status: error?.status || "no-status",
+  });
+}
 }
