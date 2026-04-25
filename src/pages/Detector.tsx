@@ -139,7 +139,13 @@ const runAIAnalysis = async () => {
       throw new Error(text);
     }
 
-    const data = JSON.parse(text);
+    let cleaned = text
+  .replace(/```json/g, "")
+  .replace(/```/g, "")
+  .trim();
+  
+
+const data = JSON.parse(cleaned);
 
     setResult({
       isPhishing: Boolean(data.isPhishing),
