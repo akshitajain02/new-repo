@@ -1,42 +1,52 @@
 export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).json({ error: "Only POST allowed" });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Only POST allowed" });
+  }
 
   try {
     const { emailText } = req.body;
-    if (!emailText) return res.status(400).json({ error: "Email text missing" });
 
-    // MODEL UPDATED: Using 'gemini-pro' which is the most widely supported version for v1
-    const MODEL = "gemini-pro"; 
-    const API_URL = `https://generativelanguage.googleapis.com/v1/models/${MODEL}:generateContent?key=${process.env.GEMINI_API_KEY}`;
-
-    const prompt = `Analyze this email for phishing. Return ONLY a valid JSON object. 
-    Format: {"isPhishing": boolean, "confidence": number, "indicators": string[], "recommendation": string}
-    Email: ${emailText}`;
-
-    const geminiRes = await fetch(API_URL, {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }]
-      })
+        model: "llama3-8b-8192",
+        messages: [
+          {
+            role: "system",
+            content: `You are a phishing detector. Return JSON only:
+{
+  "isPhishing": true,
+  "confidence": 85,
+  "indicators": ["reason1"],
+  "recommendation": "what to do"
+}`
+          },
+          {
+            role: "user",
+            content: emailText
+          }
+        ]
+      }),
     });
 
-    const data = await geminiRes.json();
+    const data = await response.json();
 
-    if (!geminiRes.ok) {
-      // Agar 'gemini-pro' bhi 404 de, toh iska matlab model name nahi, API key issue hai
-      return res.status(geminiRes.status).json({ 
-        error: "API Error", 
-        message: data.error?.message || "Model not found" 
-      });
-    }
+    const text = data?.choices?.[0]?.message?.content || "{}";
 
-    let aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    const cleanJson = aiText.replace(/```json/g, "").replace(/```/g, "").trim();
+    const cleaned = text.replace(/```json|```/g, "").trim();
 
-    return res.status(200).json(JSON.parse(cleanJson));
+    const result = JSON.parse(cleaned);
+
+    return res.status(200).json(result);
 
   } catch (error) {
-    return res.status(500).json({ error: "System Error", message: error.message });
+    return res.status(500).json({
+      error: "AI failed",
+      details: error.message,
+    });
   }
 }
