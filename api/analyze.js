@@ -16,8 +16,7 @@ export default async function handler(req, res) {
 
     // 1. Updated Model to 1.5-flash and Version to v1beta
     const MODEL = "gemini-1.5-flash";
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${process.env.GEMINI_API_KEY}`;
-
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
     const prompt = `
       Analyze this email for phishing. Return ONLY valid JSON.
       
@@ -33,17 +32,19 @@ export default async function handler(req, res) {
       ${emailText}
     `;
 
-    const geminiRes = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        // 2. Added generationConfig to force JSON output
-        generationConfig: {
-          responseMimeType: "application/json"
-        }
-      })
-    });
+    // Replacement for the fetch part:
+const geminiRes = await fetch(
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + process.env.GEMINI_API_KEY,
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+    }),
+  }
+);
 
     const geminiData = await geminiRes.json();
 
