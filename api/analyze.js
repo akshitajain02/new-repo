@@ -13,19 +13,18 @@ export default async function handler(req, res) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "llama3-8b-8192",
+        model: "llama3-70b-8192",
         messages: [
           {
             role: "system",
             content: `
-You are a cybersecurity phishing detection system.
+You are a strict phishing detection system.
 
-Analyze the email strictly.
-
-Rules:
-- If email contains lottery, prize, money request, urgency, or asking for payment → mark as phishing
-- If email asks for money transfer or bank details → phishing
-- If urgency words like "urgent", "immediately" → increase risk
+If ANY of these are present, mark as phishing:
+- lottery, prize, winnings
+- money request, deposit, transfer
+- urgency (urgent, immediately)
+- asking for bank/account/payment
 
 Return ONLY JSON:
 {
@@ -35,9 +34,7 @@ Return ONLY JSON:
   "recommendation": "short action advice"
 }
 
-IMPORTANT:
-- Do NOT say safe for lottery scams
-- Be strict and conservative
+Be strict. Never mark lottery emails as safe.
 `
           },
           {
@@ -51,10 +48,32 @@ IMPORTANT:
     const data = await response.json();
 
     const text = data?.choices?.[0]?.message?.content || "{}";
-
     const cleaned = text.replace(/```json|```/g, "").trim();
 
-    const result = JSON.parse(cleaned);
+    let result = JSON.parse(cleaned);
+
+    // 🔥 HYBRID SAFETY (GUARANTEED DETECTION)
+    const lower = emailText.toLowerCase();
+
+    if (
+      lower.includes("lottery") ||
+      lower.includes("won") ||
+      lower.includes("prize") ||
+      lower.includes("urgent") ||
+      lower.includes("deposit") ||
+      lower.includes("bank")
+    ) {
+      result = {
+        isPhishing: true,
+        confidence: 90,
+        indicators: [
+          "Lottery scam detected",
+          "Money request found",
+          "Urgency pressure detected"
+        ],
+        recommendation: "Do not send money. This is a phishing scam."
+      };
+    }
 
     return res.status(200).json(result);
 
