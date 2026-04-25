@@ -17,13 +17,28 @@ export default async function handler(req, res) {
         messages: [
           {
             role: "system",
-            content: `You are a phishing detector. Return JSON only:
+            content: `
+You are a cybersecurity phishing detection system.
+
+Analyze the email strictly.
+
+Rules:
+- If email contains lottery, prize, money request, urgency, or asking for payment → mark as phishing
+- If email asks for money transfer or bank details → phishing
+- If urgency words like "urgent", "immediately" → increase risk
+
+Return ONLY JSON:
 {
   "isPhishing": true,
-  "confidence": 85,
-  "indicators": ["reason1"],
-  "recommendation": "what to do"
-}`
+  "confidence": number (0-100),
+  "indicators": ["clear reasons"],
+  "recommendation": "short action advice"
+}
+
+IMPORTANT:
+- Do NOT say safe for lottery scams
+- Be strict and conservative
+`
           },
           {
             role: "user",
