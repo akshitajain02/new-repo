@@ -32,18 +32,33 @@ const prompt = `Analyze this email for phishing. Return ONLY valid JSON.
     `;
 
     // Replacement for the fetch part:
-const geminiRes = await fetch(
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + process.env.GEMINI_API_KEY,
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-    }),
-  }
-);
+// 1. Use 'gemini-1.5-flash' with the 'v1' (stable) endpoint
+const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+
+const geminiRes = await fetch(API_URL, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    contents: [{
+      parts: [{ text: prompt }]
+    }]
+  })
+});
+
+const geminiData = await geminiRes.json();
+
+// DEBUGGING LOG: This will show up in your Vercel Logs
+console.log("Gemini Raw Response:", JSON.stringify(geminiData));
+
+if (!geminiRes.ok) {
+  return res.status(geminiRes.status).json({
+    error: "Model connection failed",
+    message: geminiData.error?.message || "Unknown error",
+    suggestion: "Check if the API Key is restricted in Google Cloud Console"
+  });
+}
 
     const geminiData = await geminiRes.json();
 
