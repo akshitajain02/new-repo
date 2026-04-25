@@ -149,7 +149,7 @@ Make indicators specific and detailed, not one-word.
 
     if (ruleScore >= 40) {
       result.isPhishing = true;
-      result.confidence = Math.max(Number(result.confidence || 0), Math.min(98, 55 + ruleScore));
+      result.confidence = Math.max(Number(result.confidence || 0), Math.min(98, 5 + ruleScore));
       result.indicators = [
         ...new Set([
           ...(Array.isArray(result.indicators) ? result.indicators : []),
