@@ -48,6 +48,11 @@ Decision rules:
 - If email is normal informational communication without sensitive request, mark SAFE.
 - Be conservative. If risk is unclear but suspicious, mark PHISHING.
 
+Recommendation rules:
+- If money is asked → clearly say DO NOT SEND MONEY
+- If OTP/password → say DO NOT SHARE CREDENTIALS
+- If link present → say DO NOT CLICK LINKS
+- Make recommendation specific to this email, not generic
 Return ONLY valid JSON. No markdown. No extra text.
 
 Required JSON format:
@@ -59,7 +64,7 @@ Required JSON format:
     "Detailed reason 2",
     "Detailed reason 3"
   ],
-  "recommendation": "Detailed recommendation in 2-3 sentences explaining what the user should do.",
+"recommendation": "Give a SPECIFIC recommendation based on the email content. Do not repeat generic advice. Mention exact action user should take for THIS email.",
   "summary": "Short 1-2 sentence explanation of why this email is safe or phishing."
 }
 
