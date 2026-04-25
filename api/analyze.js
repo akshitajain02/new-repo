@@ -15,10 +15,9 @@ export default async function handler(req, res) {
     }
 
     // 1. Updated Model to 1.5-flash and Version to v1beta
-    const MODEL = "gemini-1.5-flash";
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
-    const prompt = `
-      Analyze this email for phishing. Return ONLY valid JSON.
+   const MODEL = "gemini-pro"; 
+const API_URL = `https://generativelanguage.googleapis.com/v1/models/${MODEL}:generateContent?key=${process.env.GEMINI_API_KEY}`;
+const prompt = `Analyze this email for phishing. Return ONLY valid JSON.
       
       Format:
       {
