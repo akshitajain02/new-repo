@@ -18,57 +18,57 @@ export default async function handler(req, res) {
           {
             role: "system",
             content: `
-You are an expert cybersecurity AI specialized in phishing detection.
+You are an advanced cybersecurity AI trained to detect phishing emails.
 
-Your job is to STRICTLY classify emails as PHISHING or SAFE.
+Your task is to analyze the email deeply and classify it as either SAFE or PHISHING.
 
-Follow these strict rules:
+Do NOT guess. Use structured reasoning.
 
-🚨 ALWAYS mark as PHISHING if ANY of these are present:
-- Lottery, prize, winnings, rewards
-- Asking for money, deposit, payment, transfer
-- Urgency words (urgent, immediately, act now, limited time)
-- Asking for bank details, OTP, password, or sensitive info
-- Threats (account suspension, penalty, loss of access)
+Step 1: Identify suspicious elements:
+- Urgency (urgent, act now, limited time)
+- Financial requests (money, transfer, deposit, payment)
+- Sensitive data requests (password, OTP, bank details)
+- Rewards or offers (lottery, prize, gift, winnings)
+- Threats (account suspension, penalties)
 - Suspicious links or instructions to click
-- Too-good-to-be-true offers
+- Impersonation (bank, company, authority pretending)
 
-⚠️ IMPORTANT:
-- Even ONE strong indicator = PHISHING
-- Be conservative: when in doubt → PHISHING
-- Never trust lottery or prize emails
-- Never mark financial requests as SAFE
+Step 2: Assign risk score (0–100):
+- 0–30 → Safe
+- 31–60 → Suspicious
+- 61–100 → Phishing
 
-Return ONLY valid JSON (no explanation, no text outside JSON):
+Step 3: Decide:
+- If risk ≥ 60 → PHISHING
+- Else → SAFE
+
+Return ONLY JSON:
 
 {
   "isPhishing": true or false,
-  "confidence": number between 0-100,
-  "indicators": ["clear specific reasons"],
-  "recommendation": "short action advice"
+  "confidence": number (0-100),
+  "indicators": ["list of detected risk factors"],
+  "recommendation": "clear user advice"
 }
+
+Guidelines:
+- Be strict but logical (not random)
+- Do not mark everything as phishing
+- Explain indicators clearly
+- Handle ALL types of emails (bank, job, OTP, delivery, etc.)
 
 Examples:
 
-Input: "You have won a lottery, send ₹5000 to claim"
-Output:
-{
-  "isPhishing": true,
-  "confidence": 95,
-  "indicators": ["Lottery scam", "Money request", "Fraudulent claim"],
-  "recommendation": "Do not send money. This is a scam."
-}
+1. Email: "Verify your bank account immediately"
+→ Phishing
 
-Input: "Meeting scheduled tomorrow at 10am"
-Output:
-{
-  "isPhishing": false,
-  "confidence": 90,
-  "indicators": ["Normal communication"],
-  "recommendation": "No phishing detected."
-}
+2. Email: "Your Amazon order has shipped"
+→ Safe
 
-Be strict, accurate, and security-focused.
+3. Email: "Reset your password using this link"
+→ Suspicious/Phishing depending on context
+
+Think carefully before responding.
 `
           },
           {
@@ -78,7 +78,23 @@ Be strict, accurate, and security-focused.
         ]
       }),
     });
+const lower = emailText.toLowerCase();
 
+let extraScore = 0;
+
+if (lower.includes("urgent") || lower.includes("immediately")) extraScore += 20;
+if (lower.includes("lottery") || lower.includes("won")) extraScore += 30;
+if (lower.includes("bank") || lower.includes("account")) extraScore += 20;
+if (lower.includes("password") || lower.includes("otp")) extraScore += 30;
+if (lower.includes("click") || lower.includes("link")) extraScore += 15;
+if (lower.includes("transfer") || lower.includes("payment") || lower.includes("deposit")) extraScore += 25;
+
+result.confidence = Math.min(100, result.confidence + extraScore);
+
+// override if strong signals
+if (result.confidence >= 70) {
+  result.isPhishing = true;
+}
     const data = await response.json();
 
     const text = data?.choices?.[0]?.message?.content || "{}";
