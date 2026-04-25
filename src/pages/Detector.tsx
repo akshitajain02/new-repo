@@ -135,8 +135,14 @@ const runAIAnalysis = async () => {
     console.log("AI RESPONSE:", data);
 
     if (!res.ok) {
-      throw new Error(data.details || data.error || "AI failed");
-    }
+  throw new Error(
+    typeof data.details === "string"
+      ? data.details
+      : data.details
+      ? JSON.stringify(data.details, null, 2)
+      : data.error || "AI failed"
+  );
+}
 
     setResult({
       isPhishing: Boolean(data.isPhishing),
@@ -159,7 +165,7 @@ const runAIAnalysis = async () => {
 
   setResult({
     isPhishing: true,
-    confidence: 50,
+    confidence: 55,
     indicators: ["AI request failed", message],
     recommendation: message,
   });
