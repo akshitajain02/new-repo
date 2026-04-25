@@ -18,25 +18,10 @@ export const HeroSection = () => {
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
       
       <div className="container relative z-10 max-w-6xl mx-auto text-center">
-        <div className="flex flex-col items-center gap-2">
-
-  
-  <img 
-    src="/logo.png" 
-    alt="Phishing Guard" 
-    className="w-16 h-16 object-contain"
-  />
-
-  
-  <div className="flex items-center gap-2">
-    <Shield className="w-4 h-4 text-primary" />
-    
-    <span className="text-sm font-medium text-primary">
-      Phishing Detection & Prevention Platform
-    </span>
-  </div>
-
-</div>
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8 animate-fade-in">
+          <Shield className="w-4 h-4 text-primary" />
+          <span className="text-sm font-medium text-primary">Phishing Detection & Prevention Platform</span>
+        </div>
         
         <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-fade-in" style={{ animationDelay: '0.1s' }}>
           Stay Protected From
