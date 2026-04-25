@@ -131,21 +131,12 @@ const runAIAnalysis = async () => {
       body: JSON.stringify({ emailText }),
     });
 
-    const text = await res.text();
-    console.log("STATUS:", res.status);
-    console.log("RAW RESPONSE:", text);
+    const data = await res.json();
+    console.log("AI RESPONSE:", data);
 
     if (!res.ok) {
-      throw new Error(text);
+      throw new Error(data.details || data.error || "AI failed");
     }
-
-    let cleaned = text
-  .replace(/```json/g, "")
-  .replace(/```/g, "")
-  .trim();
-  
-
-const data = JSON.parse(cleaned);
 
     setResult({
       isPhishing: Boolean(data.isPhishing),
@@ -153,19 +144,20 @@ const data = JSON.parse(cleaned);
       indicators: Array.isArray(data.indicators)
         ? data.indicators
         : ["AI analysis completed"],
-      recommendation: data.recommendation || "Be careful with suspicious emails.",
+      recommendation:
+        data.recommendation || "Be careful with suspicious emails.",
     });
   } catch (err) {
-  console.log("AI ERROR DETAILS:", err);
+    console.log("AI ERROR:", err);
 
-  setResult({
-    isPhishing: true,
-    confidence: 50,
-    indicators: ["AI request failed"],
-    recommendation:
-      err instanceof Error ? err.message : JSON.stringify(err),
-  });
-}
+    setResult({
+      isPhishing: true,
+      confidence: 50,
+      indicators: ["AI request failed"],
+      recommendation:
+        err instanceof Error ? err.message : "Could not complete AI analysis.",
+    });
+  }
 };
 
 const runMLAnalysis = async () => {
