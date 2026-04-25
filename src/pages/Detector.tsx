@@ -147,17 +147,23 @@ const runAIAnalysis = async () => {
       recommendation:
         data.recommendation || "Be careful with suspicious emails.",
     });
-  } catch (err) {
-    console.log("AI ERROR:", err);
+ } catch (err) {
+  console.log("AI ERROR:", err);
 
-    setResult({
-      isPhishing: true,
-      confidence: 50,
-      indicators: ["AI request failed"],
-      recommendation:
-        err instanceof Error ? err.message : "Could not complete AI analysis.",
-    });
-  }
+  const message =
+    err instanceof Error
+      ? err.message
+      : typeof err === "string"
+      ? err
+      : JSON.stringify(err, null, 2);
+
+  setResult({
+    isPhishing: true,
+    confidence: 50,
+    indicators: ["AI request failed", message],
+    recommendation: message,
+  });
+}
 };
 
 const runMLAnalysis = async () => {
