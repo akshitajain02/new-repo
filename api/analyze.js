@@ -1,9 +1,3 @@
-import OpenAI from "openai";
-
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Only POST allowed" });
@@ -12,37 +6,53 @@ export default async function handler(req, res) {
   try {
     const { emailText } = req.body;
 
-    const completion = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: `You are a phishing detector. Analyze the email and return JSON only like this:
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: `Analyze this email and detect if it is phishing.
+Return ONLY JSON in this format:
 {
   "isPhishing": true,
   "confidence": 85,
-  "indicators": ["reason 1", "reason 2"],
-  "recommendation": "what user should do"
-}`,
-        },
-        {
-          role: "user",
-          content: emailText,
-        },
-      ],
-      response_format: { type: "json_object" },
-    });
+  "indicators": ["reason1", "reason2"],
+  "recommendation": "what to do"
+}
 
-    const result = JSON.parse(completion.choices[0].message.content);
+Email:
+${emailText}`,
+                },
+              ],
+            },
+          ],
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    console.log("GEMINI RAW:", data);
+
+    const text =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+
+    const result = JSON.parse(text);
 
     return res.status(200).json(result);
   } catch (error) {
-  console.error("AI ERROR FULL:", error);
+    console.error("GEMINI ERROR:", error);
 
-  return res.status(500).json({
-    error: "AI request failed",
-    details: error?.message || String(error),
-    status: error?.status || "no-status",
-  });
-}
+    return res.status(500).json({
+      error: "Gemini request failed",
+      details: error.message,
+    });
+  }
 }
