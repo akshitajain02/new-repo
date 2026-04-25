@@ -6,69 +6,69 @@ export default async function handler(req, res) {
   try {
     const { emailText } = req.body;
 
+    if (!emailText || !emailText.trim()) {
+      return res.status(400).json({ error: "Email text is required" });
+    }
+
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "llama-3.1-8b-8192",
+        model: "llama3-70b-8192",
+        temperature: 0.1,
         messages: [
           {
             role: "system",
             content: `
-You are an advanced cybersecurity AI trained to detect phishing emails.
+You are an expert cybersecurity phishing email detection engine.
 
-Your task is to analyze the email deeply and classify it as either SAFE or PHISHING.
+Analyze ANY type of email: banking, job offer, delivery, lottery, OTP, password reset, account suspension, invoice, school/college notice, company notice, shopping, social media, crypto, government, tax, payment, refund, investment, charity, and normal personal emails.
 
-Do NOT guess. Use structured reasoning.
+Classify the email as PHISHING or SAFE using strict cybersecurity logic.
 
-Step 1: Identify suspicious elements:
-- Urgency (urgent, act now, limited time)
-- Financial requests (money, transfer, deposit, payment)
-- Sensitive data requests (password, OTP, bank details)
-- Rewards or offers (lottery, prize, gift, winnings)
-- Threats (account suspension, penalties)
-- Suspicious links or instructions to click
-- Impersonation (bank, company, authority pretending)
+High-risk phishing indicators include:
+- Lottery, prize, reward, winnings, gift card, free money
+- Asking for payment, deposit, transfer, processing fee, advance fee
+- Asking for OTP, password, PIN, bank details, card details, login credentials
+- Urgency or pressure: urgent, immediately, act now, limited time, last warning
+- Threats: account suspension, legal action, penalty, blocked account
+- Suspicious links, shortened links, unknown domains, click instructions
+- Impersonation of bank, company, government, college, delivery service, support team
+- Poor grammar combined with financial/sensitive request
+- Too-good-to-be-true offer
+- Crypto, investment, inheritance, donation, refund scam
 
-Step 2: Assign risk score (0–100):
-- 0–30 → Safe
-- 31–60 → Suspicious
-- 61–100 → Phishing
+Decision rules:
+- If there is any request for money or sensitive information with urgency, mark PHISHING.
+- If there is lottery/prize/winnings with payment or claim instruction, mark PHISHING.
+- If email contains suspicious link + account/security warning, mark PHISHING.
+- If email is normal informational communication without sensitive request, mark SAFE.
+- Be conservative. If risk is unclear but suspicious, mark PHISHING.
 
-Step 3: Decide:
-- If risk ≥ 60 → PHISHING
-- Else → SAFE
+Return ONLY valid JSON. No markdown. No extra text.
 
-Return ONLY JSON:
-
+Required JSON format:
 {
-  "isPhishing": true or false,
-  "confidence": number (0-100),
-  "indicators": ["list of detected risk factors"],
-  "recommendation": "clear user advice"
+  "isPhishing": true,
+  "confidence": 0,
+  "indicators": [
+    "Detailed reason 1",
+    "Detailed reason 2",
+    "Detailed reason 3"
+  ],
+  "recommendation": "Detailed recommendation in 2-3 sentences explaining what the user should do.",
+  "summary": "Short 1-2 sentence explanation of why this email is safe or phishing."
 }
 
-Guidelines:
-- Be strict but logical (not random)
-- Do not mark everything as phishing
-- Explain indicators clearly
-- Handle ALL types of emails (bank, job, OTP, delivery, etc.)
+Confidence guide:
+0-30 = mostly safe
+31-60 = suspicious
+61-100 = phishing/high risk
 
-Examples:
-
-1. Email: "Verify your bank account immediately"
-→ Phishing
-
-2. Email: "Your Amazon order has shipped"
-→ Safe
-
-3. Email: "Reset your password using this link"
-→ Suspicious/Phishing depending on context
-
-Think carefully before responding.
+Make indicators specific and detailed, not one-word.
 `
           },
           {
@@ -81,52 +81,91 @@ Think carefully before responding.
 
     const data = await response.json();
 
-if (!response.ok) {
-  return res.status(500).json({
-    error: "Groq API failed",
-    details: data,
-  });
-}
+    if (!response.ok) {
+      return res.status(500).json({
+        error: "Groq API failed",
+        details: data,
+      });
+    }
 
-const text = data?.choices?.[0]?.message?.content || "{}";
-const cleaned = text.replace(/```json|```/g, "").trim();
+    const text = data?.choices?.[0]?.message?.content || "{}";
+    const cleaned = text.replace(/```json|```/g, "").trim();
 
-let result;
-try {
-  result = JSON.parse(cleaned);
-} catch {
-  result = {
-    isPhishing: true,
-    confidence: 70,
-    indicators: ["AI response format issue"],
-    recommendation: cleaned,
-  };
-}
-
-    // 🔥 HYBRID SAFETY (GUARANTEED DETECTION)
-    const lower = emailText.toLowerCase();
-
-    if (
-      lower.includes("lottery") ||
-      lower.includes("won") ||
-      lower.includes("prize") ||
-      lower.includes("urgent") ||
-      lower.includes("deposit") ||
-      lower.includes("bank")
-    ) {
+    let result;
+    try {
+      result = JSON.parse(cleaned);
+    } catch (parseError) {
       result = {
         isPhishing: true,
-        confidence: 90,
+        confidence: 70,
         indicators: [
-          "Lottery scam detected",
-          "Money request found",
-          "Urgency pressure detected"
+          "AI response could not be parsed correctly, so the system treated the email as suspicious for safety."
         ],
-        recommendation: "Do not send money. This is a phishing scam."
+        recommendation:
+          "Do not click links or share personal information until the sender and email content are verified.",
+        summary: cleaned || "AI returned an unclear response.",
       };
     }
 
-    return res.status(200).json(result);
+    // Hybrid rule-based safety layer
+    const lower = emailText.toLowerCase();
+    const ruleIndicators = [];
+    let ruleScore = 0;
+
+    if (/(lottery|prize|reward|won|winner|winnings|gift card)/i.test(lower)) {
+      ruleScore += 30;
+      ruleIndicators.push("The email contains reward/lottery language, which is commonly used in phishing scams.");
+    }
+
+    if (/(deposit|payment|transfer|processing fee|advance fee|send money|pay|rs\.?|₹|\$)/i.test(lower)) {
+      ruleScore += 30;
+      ruleIndicators.push("The email asks for money, payment, deposit, or financial action.");
+    }
+
+    if (/(urgent|immediately|act now|limited time|last warning|as soon as possible)/i.test(lower)) {
+      ruleScore += 20;
+      ruleIndicators.push("The email uses urgency or pressure tactics to force quick action.");
+    }
+
+    if (/(password|otp|pin|bank account|credit card|debit card|login|verify account|account number)/i.test(lower)) {
+      ruleScore += 30;
+      ruleIndicators.push("The email refers to sensitive credentials, banking information, or account verification.");
+    }
+
+    if (/(click here|http:\/\/|https:\/\/|www\.|link)/i.test(lower)) {
+      ruleScore += 20;
+      ruleIndicators.push("The email contains a link or asks the user to click, which can redirect to a malicious website.");
+    }
+
+    if (/(suspend|blocked|locked|penalty|legal action|unauthorized|security alert)/i.test(lower)) {
+      ruleScore += 25;
+      ruleIndicators.push("The email uses threat-based language such as account suspension or security warning.");
+    }
+
+    if (ruleScore >= 40) {
+      result.isPhishing = true;
+      result.confidence = Math.max(Number(result.confidence || 0), Math.min(98, 55 + ruleScore));
+      result.indicators = [
+        ...new Set([
+          ...(Array.isArray(result.indicators) ? result.indicators : []),
+          ...ruleIndicators,
+        ]),
+      ];
+      result.recommendation =
+        "Do not click any links, do not send money, and do not share OTP, password, banking, or personal details. Verify the sender through an official website, phone number, or trusted channel before taking any action.";
+      result.summary =
+        "This email shows multiple phishing characteristics such as financial pressure, urgency, suspicious claims, or sensitive information requests.";
+    }
+
+    return res.status(200).json({
+      isPhishing: Boolean(result.isPhishing),
+      confidence: Number(result.confidence ?? 50),
+      indicators: Array.isArray(result.indicators) && result.indicators.length
+        ? result.indicators
+        : ["No major suspicious indicators were detected."],
+      recommendation: result.recommendation || "Verify the sender before responding.",
+      summary: result.summary || "",
+    });
 
   } catch (error) {
     return res.status(500).json({
