@@ -13,7 +13,7 @@ export default async function handler(req, res) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "llama3-70b-8192",
+        model: "llama-3.1-8b-8192",
         messages: [
           {
             role: "system",
@@ -78,29 +78,30 @@ Think carefully before responding.
         ]
       }),
     });
-const lower = emailText.toLowerCase();
 
-let extraScore = 0;
-
-if (lower.includes("urgent") || lower.includes("immediately")) extraScore += 20;
-if (lower.includes("lottery") || lower.includes("won")) extraScore += 30;
-if (lower.includes("bank") || lower.includes("account")) extraScore += 20;
-if (lower.includes("password") || lower.includes("otp")) extraScore += 30;
-if (lower.includes("click") || lower.includes("link")) extraScore += 15;
-if (lower.includes("transfer") || lower.includes("payment") || lower.includes("deposit")) extraScore += 25;
-
-result.confidence = Math.min(100, result.confidence + extraScore);
-
-// override if strong signals
-if (result.confidence >= 70) {
-  result.isPhishing = true;
-}
     const data = await response.json();
 
-    const text = data?.choices?.[0]?.message?.content || "{}";
-    const cleaned = text.replace(/```json|```/g, "").trim();
+if (!response.ok) {
+  return res.status(500).json({
+    error: "Groq API failed",
+    details: data,
+  });
+}
 
-    let result = JSON.parse(cleaned);
+const text = data?.choices?.[0]?.message?.content || "{}";
+const cleaned = text.replace(/```json|```/g, "").trim();
+
+let result;
+try {
+  result = JSON.parse(cleaned);
+} catch {
+  result = {
+    isPhishing: true,
+    confidence: 70,
+    indicators: ["AI response format issue"],
+    recommendation: cleaned,
+  };
+}
 
     // 🔥 HYBRID SAFETY (GUARANTEED DETECTION)
     const lower = emailText.toLowerCase();
