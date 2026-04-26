@@ -1,46 +1,27 @@
 import { useEffect, useState } from "react";
 import { z } from "zod";
 
-import Navbar from "@/components/Navbar";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 
 import {
-  MessageSquare,
-  PlusCircle,
-  Send,
-  Users,
-  AlertTriangle,
-  Loader2,
-  Clock,
+  MessageSquare, PlusCircle, Send, Users, AlertTriangle, Loader2, Clock,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
 
 type ForumPost = {
   id: string;
@@ -96,7 +77,7 @@ const Forum = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
-  const [filter, setFilter] = useState<string>("all");
+  const [filter, setFilter] = useState("all");
 
   const [form, setForm] = useState({
     author_name: "",
@@ -106,10 +87,19 @@ const Forum = () => {
   });
 
   const { toast } = useToast();
+  const { user, profile } = useAuth();
+
+  const loggedInName = profile?.full_name || user?.email || "";
 
   useEffect(() => {
     fetchPosts();
   }, []);
+
+  useEffect(() => {
+    if (user && loggedInName) {
+      setForm((prev) => ({ ...prev, author_name: loggedInName }));
+    }
+  }, [user, loggedInName]);
 
   const fetchPosts = async () => {
     setLoading(true);
@@ -133,7 +123,12 @@ const Forum = () => {
   };
 
   const handleSubmit = async () => {
-    const parsed = postSchema.safeParse(form);
+    const finalData = {
+      ...form,
+      author_name: user ? loggedInName : form.author_name.trim() || "Anonymous",
+    };
+
+    const parsed = postSchema.safeParse(finalData);
 
     if (!parsed.success) {
       toast({
@@ -165,7 +160,7 @@ const Forum = () => {
     });
 
     setForm({
-      author_name: "",
+      author_name: user ? loggedInName : "",
       title: "",
       content: "",
       category: "phishing",
@@ -182,8 +177,6 @@ const Forum = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
-
       <header className="border-b border-border bg-card/50">
         <div className="container max-w-7xl mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -212,7 +205,9 @@ const Forum = () => {
                 <DialogHeader>
                   <DialogTitle>Share an incident or warning</DialogTitle>
                   <DialogDescription>
-                    Tell the community what happened. Your post can help someone avoid a scam.
+                    {user
+                      ? `Posting as ${loggedInName}`
+                      : "You can post without login using any name or Anonymous."}
                   </DialogDescription>
                 </DialogHeader>
 
@@ -220,7 +215,8 @@ const Forum = () => {
                   <div>
                     <label className="text-sm font-medium mb-1 block">Your Name</label>
                     <Input
-                      value={form.author_name}
+                      value={user ? loggedInName : form.author_name}
+                      disabled={!!user}
                       onChange={(e) =>
                         setForm({ ...form, author_name: e.target.value })
                       }
@@ -233,9 +229,7 @@ const Forum = () => {
                     <label className="text-sm font-medium mb-1 block">Title</label>
                     <Input
                       value={form.title}
-                      onChange={(e) =>
-                        setForm({ ...form, title: e.target.value })
-                      }
+                      onChange={(e) => setForm({ ...form, title: e.target.value })}
                       maxLength={140}
                       placeholder="e.g. Fake bank SMS asked for OTP"
                     />
@@ -281,11 +275,7 @@ const Forum = () => {
                     </p>
                   </div>
 
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={submitting}
-                    className="w-full"
-                  >
+                  <Button onClick={handleSubmit} disabled={submitting} className="w-full">
                     {submitting ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -387,6 +377,15 @@ const PostCard = ({ post }: { post: ForumPost }) => {
   });
 
   const { toast } = useToast();
+  const { user, profile } = useAuth();
+
+  const loggedInName = profile?.full_name || user?.email || "";
+
+  useEffect(() => {
+    if (user && loggedInName) {
+      setCommentForm((prev) => ({ ...prev, author_name: loggedInName }));
+    }
+  }, [user, loggedInName]);
 
   const loadComments = async () => {
     setLoadingComments(true);
@@ -420,7 +419,12 @@ const PostCard = ({ post }: { post: ForumPost }) => {
   };
 
   const handleComment = async () => {
-    const parsed = commentSchema.safeParse(commentForm);
+    const finalData = {
+      author_name: user ? loggedInName : commentForm.author_name.trim() || "Anonymous",
+      content: commentForm.content,
+    };
+
+    const parsed = commentSchema.safeParse(finalData);
 
     if (!parsed.success) {
       toast({
@@ -450,7 +454,7 @@ const PostCard = ({ post }: { post: ForumPost }) => {
     }
 
     setCommentForm({
-      author_name: "",
+      author_name: user ? loggedInName : "",
       content: "",
     });
 
@@ -546,7 +550,8 @@ const PostCard = ({ post }: { post: ForumPost }) => {
 
               <Input
                 placeholder="Your name"
-                value={commentForm.author_name}
+                value={user ? loggedInName : commentForm.author_name}
+                disabled={!!user}
                 onChange={(e) =>
                   setCommentForm({
                     ...commentForm,

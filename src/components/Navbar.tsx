@@ -1,4 +1,9 @@
-import { useLanguage } from "@/context/LanguageContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
@@ -9,15 +14,20 @@ import {
   Phone,
   Moon,
   Sun,
+  LogIn,
+  LogOut,
+  User,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Navbar() {
-  const { language, toggleLanguage } = useLanguage();
   const [dark, setDark] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+
+  const { user, profile, logout } = useAuth();
 
   const toggleTheme = () => {
     setDark(!dark);
@@ -34,17 +44,17 @@ export default function Navbar() {
 
   const navItems = [
     {
-      label: language === "en" ? "Home" : "होम",
+      label: "Home",
       to: "/",
       icon: Home,
     },
     {
-      label: language === "en" ? "Detector" : "डिटेक्टर",
+      label: "Detector",
       to: "/detector",
       icon: Shield,
     },
     {
-      label: language === "en" ? "Forum" : "फोरम",
+      label: "Forum",
       to: "/forum",
       icon: MessageCircle,
     },
@@ -92,9 +102,7 @@ export default function Navbar() {
             className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground text-muted-foreground"
           >
             <AlertTriangle className="h-4 w-4" />
-            <span className="hidden sm:inline">
-              {language === "en" ? "Prevention" : "बचाव"}
-            </span>
+            <span className="hidden sm:inline">Prevention</span>
           </button>
 
           <button
@@ -102,9 +110,7 @@ export default function Navbar() {
             className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground text-muted-foreground"
           >
             <FileText className="h-4 w-4" />
-            <span className="hidden sm:inline">
-              {language === "en" ? "Examples" : "उदाहरण"}
-            </span>
+            <span className="hidden sm:inline">Examples</span>
           </button>
 
           <button
@@ -112,17 +118,42 @@ export default function Navbar() {
             className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground text-muted-foreground"
           >
             <Phone className="h-4 w-4" />
-            <span className="hidden sm:inline">
-              {language === "en" ? "Contact" : "संपर्क"}
-            </span>
+            <span className="hidden sm:inline">Contact</span>
           </button>
 
-          <button
-            onClick={toggleLanguage}
-            className="px-3 py-2 rounded-md text-sm font-medium border hover:bg-accent hover:text-accent-foreground transition"
-          >
-            {language === "en" ? "हिंदी" : "EN"}
-          </button>
+          {user ? (
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <button className="flex items-center gap-2 px-3 py-2 rounded-md border bg-muted hover:bg-accent transition text-sm font-medium">
+        <User className="h-4 w-4" />
+        <span className="hidden sm:inline">
+          {profile?.full_name || user.email}
+        </span>
+      </button>
+    </DropdownMenuTrigger>
+
+    <DropdownMenuContent align="end" className="w-48">
+      <DropdownMenuItem onClick={() => navigate("/profile")}>
+        Profile
+      </DropdownMenuItem>
+
+      <DropdownMenuItem
+        onClick={logout}
+        className="text-red-500 focus:text-red-500"
+      >
+        Logout
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  </DropdownMenu>
+) : (
+  <Link
+    to="/login"
+    className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium border bg-primary text-primary-foreground hover:bg-primary/90 transition"
+  >
+    <LogIn className="h-4 w-4" />
+    <span className="hidden sm:inline">Login</span>
+  </Link>
+)}
 
           <button
             onClick={toggleTheme}
