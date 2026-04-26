@@ -100,7 +100,7 @@ export default function Login() {
     if (data.user) {
       const { error: profileError } = await supabase.from("profiles").insert({
         id: data.user.id,
-        full_name: name.trim(),
+        name: name.trim(),
         email,
       });
 

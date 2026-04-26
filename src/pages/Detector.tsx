@@ -431,7 +431,7 @@ const analyzeEmail = async () => {
           <TabsList className="grid w-full grid-cols-3 h-auto p-1">
             <TabsTrigger value="ai" className="gap-2 py-2.5">
               <Brain className="w-4 h-4" />
-              AI Analysis
+              AI Analysis by GROQ 
             </TabsTrigger>
 
             <TabsTrigger value="keyword" className="gap-2 py-2.5">
