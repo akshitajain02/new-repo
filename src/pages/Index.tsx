@@ -11,7 +11,7 @@ const Index = () => {
       <PhishingWatermark/>
       
       <HeroSection />
-      <PhishingExamples />
+     
 
       {/* 👇 YAHI CHANGE KIYA HAI (id add kiya) */}
       <div id="examples">
