@@ -342,6 +342,7 @@ const analyzeEmail = async () => {
 
   setAnalyzing(true);
   setResult(null);
+  await new Promise((resolve) => setTimeout(resolve, 1200));
 
   try {
     let scanResult: ScanResult;
