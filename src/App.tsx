@@ -38,10 +38,7 @@ const App = () => (
                 element={<div className="p-8 text-xl">Prevention Tips Page</div>}
               />
 
-              <Route
-                path="/examples"
-                element={<div className="p-8 text-xl">Phishing Examples Page</div>}
-              />
+              
 
               <Route path="*" element={<NotFound />} />
             </Routes>
