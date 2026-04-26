@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, Lock, Eye, RefreshCw, AlertCircle, CheckCircle2 } from "lucide-react";
 
 export const PreventionTips = () => {
+  const [selectedTip, setSelectedTip] = useState<any>(null);
   const tips = [
     {
       icon: Eye,
@@ -87,7 +89,11 @@ export const PreventionTips = () => {
           {tips.map((tip, index) => {
             const Icon = tip.icon;
             return (
-              <Card key={index} className="border-2 hover:border-success/50 transition-colors">
+              <Card
+  key={index}
+  onClick={() => setSelectedTip(tip)}
+  className="border-2 hover:border-success/50 transition cursor-pointer hover:scale-105"
+>
                 <CardHeader>
                   <div className="p-3 rounded-lg bg-success/10 w-fit mb-3">
                     <Icon className="w-6 h-6 text-success" />
@@ -137,6 +143,43 @@ export const PreventionTips = () => {
           </div>
         </div>
       </div>
+      {selectedTip && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="bg-white dark:bg-gray-900 p-6 rounded-xl max-w-lg w-full shadow-xl relative">
+
+      {/* Close button */}
+      <button
+        onClick={() => setSelectedTip(null)}
+        className="absolute top-2 right-3 text-xl"
+      >
+        ✖
+      </button>
+
+      <h2 className="text-2xl font-bold mb-2">{selectedTip.title}</h2>
+      <p className="text-muted-foreground mb-4">
+        {selectedTip.description}
+      </p>
+
+      <h3 className="font-semibold mb-2">How to protect:</h3>
+      <ul className="space-y-2 mb-4">
+        {selectedTip.actions.map((a: string, i: number) => (
+          <li key={i} className="text-sm flex gap-2">
+            ✔ {a}
+          </li>
+        ))}
+      </ul>
+
+      {/* Example section */}
+      <div className="p-3 rounded-lg bg-muted">
+        <h4 className="font-semibold mb-1">Example:</h4>
+        <p className="text-sm text-muted-foreground">
+          A phishing email may say: "Your account will be suspended in 24 hours. Click here to verify."
+        </p>
+      </div>
+
+    </div>
+  </div>
+)}
     </section>
   );
 };

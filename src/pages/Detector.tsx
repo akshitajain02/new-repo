@@ -1,3 +1,17 @@
+import {
+  Brain,
+  Zap,
+  Sparkles,
+  Layers,
+  ScanLine,
+} from "lucide-react";
+
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,13 +26,54 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 const PHISHING_KEYWORDS = [
-  "urgent", "verify", "suspend", "click here","lottery","account", "password",
-  "confirm", "security alert", "unusual activity", "limited time",
-  "act now", "expire", "unauthorized", "validate", "update your information",
-  "dear customer", "dear user", "congratulations", "you have won",
-  "bank account", "social security", "credit card", "login credentials",
-  "reset password", "locked account", "verify identity", "immediate action",
-  "wire transfer", "bitcoin", "gift card", "prize", "inheritance",
+  // Urgency / pressure
+  "urgent", "immediate action", "act now", "act immediately", "expire", "expires today",
+  "limited time", "last chance", "final notice", "deadline", "within 24 hours",
+  "respond now", "do not ignore", "time sensitive", "important update",
+  // Account / credential bait
+  "verify", "verify your account", "verify identity", "validate", "validate your account",
+  "confirm", "confirm your identity", "confirm your account", "update your information",
+  "update your account", "reset password", "password reset", "change password",
+  "login credentials", "your account", "account suspended", "account locked",
+  "locked account", "suspended", "suspend", "deactivated", "reactivate",
+  "unauthorized access", "unauthorized login", "unusual activity", "suspicious activity",
+  "security alert", "security warning", "security notice", "security breach",
+  // Click / link bait
+  "click here", "click below", "click the link", "follow this link",
+  "tap here", "open attachment", "download attachment", "view document",
+  "review and confirm", "sign in here", "log in to continue",
+  // Generic greetings
+  "dear customer", "dear user", "dear client", "dear member", "dear account holder",
+  "valued customer", "to whom it may concern",
+  // Money / prizes / scams
+  "congratulations", "you have won", "you've won", "winner", "lottery",
+  "prize", "claim your prize", "claim now", "free gift", "gift card",
+  "voucher", "cash prize", "jackpot", "inheritance", "beneficiary",
+  "unclaimed funds", "wire transfer", "bank transfer", "money transfer",
+  "transfer fee", "processing fee", "tax clearance", "western union",
+  "bitcoin", "cryptocurrency", "crypto wallet", "investment opportunity",
+  "guaranteed returns", "double your money", "risk free",
+  // Banking / payment
+  "bank account", "credit card", "debit card", "card blocked", "card expired",
+  "kyc update", "kyc pending", "complete kyc", "pan card", "aadhaar",
+  "upi pin", "otp", "share otp", "your otp is", "atm pin",
+  "cvv", "net banking", "internet banking", "ifsc",
+  // Identity / personal info
+  "social security", "ssn", "date of birth", "mother's maiden name",
+  "personal information", "sensitive information", "billing information",
+  // Tech support / malware
+  "your computer is infected", "virus detected", "malware detected",
+  "microsoft support", "apple support", "tech support", "system warning",
+  "drivers outdated", "license expired",
+  // Delivery / logistics scams
+  "package delivery", "package on hold", "shipment", "delivery failed",
+  "customs clearance", "tracking number", "redelivery",
+  // Common impersonations
+  "irs", "income tax refund", "tax refund", "government grant",
+  "police complaint", "court notice", "legal action",
+  // Social engineering tells
+  "do not share this", "keep this confidential", "between us only",
+  "i need a favor", "are you available",
 ];
 
 type ScanResult = {
@@ -49,6 +104,38 @@ const [mode, setMode] = useState("keyword")
   const [loadingRecents, setLoadingRecents] = useState(true);
   const [user, setUser] = useState(null)
   const { toast } = useToast();
+  const stats = [
+  {
+    label: "Total Scans",
+    value: recentScans.length,
+    icon: ScanLine,
+    tone: "from-primary/20 to-primary/5",
+    iconColor: "text-primary",
+  },
+  {
+    label: "Threats Found",
+    value: recentScans.filter((s) => s.is_phishing).length,
+    icon: AlertTriangle,
+    tone: "from-destructive/20 to-destructive/5",
+    iconColor: "text-destructive",
+    valueClass: "text-destructive",
+  },
+  {
+    label: "Safe Emails",
+    value: recentScans.filter((s) => !s.is_phishing).length,
+    icon: CheckCircle2,
+    tone: "from-success/20 to-success/5",
+    iconColor: "text-success",
+    valueClass: "text-success",
+  },
+  {
+    label: "Active Keywords",
+    value: PHISHING_KEYWORDS.length,
+    icon: Activity,
+    tone: "from-warning/20 to-warning/5",
+    iconColor: "text-warning",
+  },
+];
 
   useEffect(() => {
   fetchRecentScans();
@@ -276,72 +363,54 @@ if (user && result) {
       </header>
 
       <div className="container max-w-7xl mx-auto px-4 py-8">
-        <div className="flex gap-2 mb-4">
-  <Button onClick={() => setMode("keyword")} variant={mode==="keyword"?"default":"outline"}>
-    Keyword
-  </Button>
+        <Tabs value={mode} onValueChange={(v) => setMode(v)} className="mb-4">
+  <TabsList className="grid w-full grid-cols-3 h-auto p-1">
 
-  <Button onClick={() => setMode("ai")} variant={mode==="ai"?"default":"outline"}>
-    AI
-  </Button>
+    <TabsTrigger value="ai" className="gap-2 py-2.5">
+      <Brain className="w-4 h-4" />
+      AI Analysis
+    </TabsTrigger>
 
-  <Button onClick={() => setMode("ml")} variant={mode==="ml"?"default":"outline"}>
-    ML
-  </Button>
-</div>
+    <TabsTrigger value="keyword" className="gap-2 py-2.5">
+      <Zap className="w-4 h-4" />
+      Keyword
+    </TabsTrigger>
+
+    <TabsTrigger value="ml" className="gap-2 py-2.5">
+      <Layers className="w-4 h-4" />
+      ML
+    </TabsTrigger>
+
+  </TabsList>
+</Tabs>
         {/* Stats Bar */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card className="border border-border">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Search className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold">{recentScans.length}</div>
-                <div className="text-xs text-muted-foreground">Total Scans</div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border border-border">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-destructive/10">
-                <AlertTriangle className="w-5 h-5 text-destructive" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-destructive">
-                  {recentScans.filter(s => s.is_phishing).length}
-                </div>
-                <div className="text-xs text-muted-foreground">Threats Found</div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border border-border">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-success/10">
-                <CheckCircle2 className="w-5 h-5 text-success" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-success">
-                  {recentScans.filter(s => !s.is_phishing).length}
-                </div>
-                <div className="text-xs text-muted-foreground">Safe Emails</div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border border-border">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-warning/10">
-                <Activity className="w-5 h-5 text-warning" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold">
-                  {PHISHING_KEYWORDS.length}
-                </div>
-                <div className="text-xs text-muted-foreground">Keywords Active</div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+  {stats.map((s) => {
+    const Icon = s.icon;
+    return (
+      <Card
+        key={s.label}
+        className={`relative overflow-hidden border bg-gradient-to-br ${s.tone}`}
+      >
+        <CardContent className="p-4 flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-background/70 backdrop-blur-sm shadow-sm">
+            <Icon className={`w-5 h-5 ${s.iconColor}`} />
+          </div>
+
+          <div>
+            <div className={`text-2xl font-bold ${s.valueClass ?? ""}`}>
+              {s.value}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {s.label}
+            </div>
+          </div>
+
+        </CardContent>
+      </Card>
+    );
+  })}
+</div>
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Scanner Panel */}
@@ -363,6 +432,7 @@ if (user && result) {
                   value={emailText}
                   onChange={(e) => setEmailText(e.target.value)}
                 />
+                
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">
                     {emailText.length} characters
@@ -398,6 +468,63 @@ if (user && result) {
                 </div>
               </CardContent>
             </Card>
+            <Card className="border bg-gradient-to-br from-muted/40 to-background">
+  <CardContent className="p-5">
+    <div className="flex items-center gap-2 mb-4">
+      <Layers className="w-4 h-4 text-primary" />
+      <h3 className="font-semibold text-sm uppercase tracking-wider">
+        AI vs Keyword vs ML — Quick Comparison
+      </h3>
+    </div>
+
+    <div className="grid md:grid-cols-3 gap-4">
+
+      {/* AI */}
+      <div className="rounded-lg border border-primary/20 p-4 bg-background/50 hover:scale-105 transition">
+        <div className="flex items-center gap-2 mb-2">
+          <Brain className="w-4 h-4 text-primary" />
+          <span className="font-semibold text-sm">AI Analysis</span>
+        </div>
+        <ul className="space-y-1.5 text-xs text-muted-foreground hover:scale-105 transition">
+          <li className="flex gap-2"><span className="text-success">+</span> Understands meaning & context</li>
+          <li className="flex gap-2"><span className="text-success">+</span> Catches new, unseen scams</li>
+          <li className="flex gap-2"><span className="text-success">+</span> Explains its reasoning</li>
+          <li className="flex gap-2"><span className="text-destructive">−</span> Slower, needs internet</li>
+        </ul>
+      </div>
+
+      {/* Keyword */}
+      <div className="rounded-lg border border-warning/20 p-4 bg-background/50 hover:scale-105 transition">
+        <div className="flex items-center gap-2 mb-2">
+          <Zap className="w-4 h-4 text-warning" />
+          <span className="font-semibold text-sm">Keyword Engine</span>
+        </div>
+        <ul className="space-y-1.5 text-xs text-muted-foreground hover:scale-105 transition">
+          <li className="flex gap-2"><span className="text-success">+</span> Instant, no API calls</li>
+          <li className="flex gap-2"><span className="text-success">+</span> Predictable & transparent</li>
+          <li className="flex gap-2"><span className="text-destructive">−</span> Misses reworded attacks</li>
+          <li className="flex gap-2"><span className="text-destructive">−</span> No context awareness</li>
+        </ul>
+      </div>
+
+      {/* ML (NEW) */}
+      <div className="rounded-lg border border-success/20 p-4 bg-background/50 hover:scale-105 transition">
+        <div className="flex items-center gap-2 mb-2">
+          <Activity className="w-4 h-4 text-success" />
+          <span className="font-semibold text-sm">ML Model</span>
+        </div>
+        <ul className="space-y-1.5 text-xs text-muted-foreground hover:scale-105 transition">
+          <li className="flex gap-2"><span className="text-success">+</span> Fast pattern recognition</li>
+          <li className="flex gap-2"><span className="text-success">+</span> Learns from past data</li>
+          <li className="flex gap-2"><span className="text-success">+</span> Works offline</li>
+          <li className="flex gap-2"><span className="text-destructive">−</span> Needs training data</li>
+          <li className="flex gap-2"><span className="text-destructive">−</span> Can miss new attack styles</li>
+        </ul>
+      </div>
+
+    </div>
+  </CardContent>
+</Card>
 
             {/* Results Panel */}
             <p className="text-xs text-muted-foreground">
@@ -572,7 +699,7 @@ if (user && result) {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-1.5">
-                  {PHISHING_KEYWORDS.slice(0, 15).map((kw) => (
+                  {PHISHING_KEYWORDS.slice(0, 35).map((kw) => (
                     <Badge key={kw} variant="outline" className="text-xs">
                       {kw}
                     </Badge>

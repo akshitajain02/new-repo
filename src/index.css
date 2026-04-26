@@ -125,7 +125,89 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+  scroll-behavior: smooth;
+}
   body {
     @apply bg-background text-foreground;
   }
+}
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(20px); }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 3s ease-in-out infinite;
+}
+
+@keyframes move {
+  0% { transform: translateX(-50px); }
+  50% { transform: translateX(50px); }
+  100% { transform: translateX(-50px); }
+}
+
+.animate-move {
+  animation: move 4s ease-in-out infinite;
+}
+@keyframes sway-slow {
+  0% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+  100% { transform: rotate(-3deg); }
+}
+
+.animate-sway-slow {
+  animation: sway-slow 5s ease-in-out infinite;
+}
+
+@keyframes float-y {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes scammer-walk {
+  0%, 100% { transform: translateX(-10px); }
+  50% { transform: translateX(10px); }
+}
+
+.animate-scammer-walk {
+  animation: scammer-walk 2.5s ease-in-out infinite;
+}
+
+@keyframes shield-glow {
+  0%, 100% { filter: drop-shadow(0 0 8px hsl(var(--primary))); }
+  50% { filter: drop-shadow(0 0 28px hsl(var(--primary))); }
+}
+
+.animate-shield-glow {
+  animation: shield-glow 2s ease-in-out infinite;
+}
+
+@keyframes data-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-data-float {
+  animation: data-float 3s ease-in-out infinite;
+}
+@keyframes shake-x {
+  0%,100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+.animate-shake-x {
+  animation: shake-x 0.4s ease-in-out infinite;
+}
+
+@keyframes scammer-run {
+  0% { transform: translateX(-80px); opacity: 0; }
+  20% { opacity: 1; }
+  80% { transform: translateX(80vw); opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.animate-scammer-run {
+  animation: scammer-run 5s ease-in-out;
 }

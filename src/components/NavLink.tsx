@@ -1,15 +1,7 @@
 import { NavLink as RouterNavLink, NavLinkProps } from "react-router-dom";
 import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
-import { useEffect, useState } from "react"
-import { supabase } from "@/integrations/supabase/client"
-const [user, setUser] = useState(null)
 
-useEffect(() => {
-  supabase.auth.getUser().then(({ data }) => {
-    setUser(data.user)
-  })
-}, [])
 interface NavLinkCompatProps extends Omit<NavLinkProps, "className"> {
   className?: string;
   activeClassName?: string;
@@ -28,7 +20,7 @@ const NavLink = forwardRef<HTMLAnchorElement, NavLinkCompatProps>(
         {...props}
       />
     );
-  },
+  }
 );
 
 NavLink.displayName = "NavLink";
