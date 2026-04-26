@@ -1,3 +1,4 @@
+import { predictEmail } from "@/ml/mlModel";
 import {
   Brain,
   Zap,
@@ -218,126 +219,175 @@ const Detector = () => {
   };
 
   const runAIAnalysis = async (): Promise<ScanResult> => {
-    try {
-      const res = await fetch("/api/analyze", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ emailText }),
-      });
+  try {
+    const res = await fetch("/api/analyze", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ emailText }),
+    });
 
-      const data = await res.json();
-      console.log("AI RESPONSE:", data);
+    const textResponse = await res.text();
 
-      if (!res.ok) {
-        throw new Error(
-          typeof data.details === "string"
-            ? data.details
-            : data.details
-            ? JSON.stringify(data.details, null, 2)
-            : data.error || "AI failed"
-        );
-      }
-
-      const scanResult: ScanResult = {
-        isPhishing: Boolean(data.isPhishing),
-        confidence: Number(data.confidence ?? 50),
-        indicators: Array.isArray(data.indicators)
-          ? data.indicators
-          : ["AI analysis completed"],
-        recommendation:
-          data.recommendation || "Be careful with suspicious emails.",
-      };
-
-      setResult(scanResult);
-      return scanResult;
-    } catch (err) {
-      console.log("AI ERROR:", err);
-
-      const message =
-        err instanceof Error
-          ? err.message
-          : typeof err === "string"
-          ? err
-          : JSON.stringify(err, null, 2);
-
-      const scanResult: ScanResult = {
-        isPhishing: true,
-        confidence: 55,
-        indicators: ["AI request failed", message],
-        recommendation: message,
-      };
-
-      setResult(scanResult);
-      return scanResult;
+    if (!textResponse) {
+      throw new Error("Empty response from AI server");
     }
-  };
 
-  const runMLAnalysis = async (): Promise<ScanResult> => {
-    const text = emailText.toLowerCase();
+    let data: any;
 
-    const isPhishing = text.includes("bank") || text.includes("password");
+    try {
+      data = JSON.parse(textResponse);
+    } catch {
+      throw new Error("Invalid JSON response from AI server");
+    }
+
+    if (!res.ok) {
+      throw new Error(data?.error || data?.details || "AI request failed");
+    }
 
     const scanResult: ScanResult = {
-      isPhishing,
-      confidence: isPhishing ? 90 : 65,
-      indicators: isPhishing
-        ? ["ML detected sensitive keywords"]
-        : ["ML model sees low risk"],
-      recommendation: isPhishing ? "⚠️ ML says: high risk" : "✅ ML says: safe",
+      isPhishing: Boolean(data.isPhishing),
+      confidence: Number(data.confidence ?? 50),
+      indicators: Array.isArray(data.indicators)
+        ? data.indicators
+        : ["AI analysis completed"],
+      recommendation:
+        data.recommendation ||
+        "Review this email carefully before taking action.",
     };
 
     setResult(scanResult);
     return scanResult;
+  } catch (err) {
+    console.error("AI ERROR:", err);
+
+    const message =
+      err instanceof Error ? err.message : "AI analysis failed";
+
+    const scanResult: ScanResult = {
+      isPhishing: true,
+      confidence: 50,
+      indicators: [
+        "AI service did not return a valid response",
+        message,
+      ],
+      recommendation:
+        "AI analysis is currently unavailable. Please use Keyword or ML mode for now.",
+    };
+
+    setResult(scanResult);
+    return scanResult;
+  }
+};
+
+  const runMLAnalysis = async (): Promise<ScanResult> => {
+  const mlResult = predictEmail(emailText);
+  const text = emailText.toLowerCase();
+
+  const indicators: string[] = [];
+
+  if (text.includes("urgent") || text.includes("immediately") || text.includes("final warning")) {
+    indicators.push("Urgent or pressure-based language detected");
+  }
+
+  if (text.includes("verify") || text.includes("login") || text.includes("credentials")) {
+    indicators.push("Account verification or credential-related request found");
+  }
+
+  if (text.includes("bank") || text.includes("payment") || text.includes("card")) {
+    indicators.push("Financial terms detected in the email content");
+  }
+
+  if (text.includes("otp") || text.includes("pin") || text.includes("cvv")) {
+    indicators.push("Sensitive authentication information mentioned");
+  }
+
+  if (text.includes("click") || text.includes("link") || text.includes("download")) {
+    indicators.push("Email contains action-oriented link or download language");
+  }
+
+  if (indicators.length === 0) {
+    indicators.push(
+      mlResult.label === 1
+        ? "Text pattern is similar to known phishing examples"
+        : "No strong phishing indicators were found"
+    );
+  }
+
+  const scanResult: ScanResult = {
+    isPhishing: mlResult.label === 1,
+    confidence: mlResult.confidence,
+    indicators,
+    recommendation:
+      mlResult.label === 1
+        ? "This email shows phishing-like patterns. Avoid clicking links, downloading attachments, or sharing personal information."
+        : "This email appears safe based on the trained ML pattern, but still verify the sender if anything feels unusual.",
   };
 
-  const analyzeEmail = async () => {
-    console.log("MODE:", mode);
+  setResult(scanResult);
+  return scanResult;
+};
+const analyzeEmail = async () => {
+  console.log("MODE:", mode);
 
-    if (!emailText.trim()) {
-      toast({
-        title: "Email required",
-        variant: "destructive",
-      });
-      return;
-    }
+  if (!emailText.trim()) {
+    toast({
+      title: "Email required",
+      description: "Please paste an email before running the scan.",
+      variant: "destructive",
+    });
+    return;
+  }
 
-    setAnalyzing(true);
-    setResult(null);
+  setAnalyzing(true);
+  setResult(null);
 
-    let scanResult: ScanResult | null = null;
+  try {
+    let scanResult: ScanResult;
 
-    switch (mode) {
-      case "keyword":
-        scanResult = await runKeywordAnalysis();
-        break;
-      case "ai":
-        scanResult = await runAIAnalysis();
-        break;
-      case "ml":
-        scanResult = await runMLAnalysis();
-        break;
-      default:
-        scanResult = await runKeywordAnalysis();
-        break;
-    }
-
-    if (user && scanResult) {
-      await supabase.from("phishing_scans").insert({
-        email_content: emailText,
-        is_phishing: scanResult.isPhishing,
-        confidence: scanResult.confidence,
-        indicators: scanResult.indicators,
-        user_id: user.id,
-      });
-
-      fetchRecentScans();
+    if (mode === "keyword") {
+      scanResult = await runKeywordAnalysis();
+    } else if (mode === "ai") {
+      scanResult = await runAIAnalysis();
+    } else if (mode === "ml") {
+      scanResult = await runMLAnalysis();
+    } else {
+      scanResult = await runKeywordAnalysis();
     }
 
     setAnalyzing(false);
-  };
 
+    if (user && scanResult) {
+      supabase
+        .from("phishing_scans")
+        .insert({
+          email_content: emailText,
+          is_phishing: scanResult.isPhishing,
+          confidence: scanResult.confidence,
+          indicators: scanResult.indicators,
+          user_id: user.id,
+        })
+        .then(({ error }) => {
+          if (error) {
+            console.error("Scan save error:", error);
+          } else {
+            fetchRecentScans();
+          }
+        });
+    }
+  } catch (error) {
+    console.error("Analysis error:", error);
+
+    toast({
+      title: "Analysis failed",
+      description: "Something went wrong while scanning this email.",
+      variant: "destructive",
+    });
+
+    setAnalyzing(false);
+  }
+};
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card/80 backdrop-blur sticky top-0 z-50">
